@@ -72,59 +72,57 @@ export default function Wishlist() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
                         {wishlist.map((item) => {
-                            const product = item.product_details;
-                            const imageUrl =
-                                product.images && product.images.length > 0
-                                    ? product.images[0].url
-                                    : null;
+    const product = item.product;
 
-                            return (
-                                <div
-                                    key={item.id}
-                                    className="group flex flex-col"
-                                >
-                                    <div className="relative overflow-hidden">
-                                        {imageUrl ? (
-                                            <img
-                                                src={imageUrl}
-                                                alt={product.name}
-                                                className="w-full h-[350px] object-cover transition duration-300 group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-[350px] bg-gray-200 flex items-center justify-center">
-                                                No Image
-                                            </div>
-                                        )}
+    if (!product) return null;
 
-                                        <button
-                                            onClick={() =>
-                                                removeFromWishlist(item.id)
-                                            }
-                                            className="absolute top-4 right-4 border px-3 py-1 text-xs uppercase bg-white hover:bg-black hover:text-white transition"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
+    const imageUrl =
+        product.images && product.images.length > 0
+            ? product.images[0].url
+            : null;
 
-                                    <div className="mt-6 flex flex-col gap-2">
-                                        <h2 className="text-lg font-semibold uppercase tracking-wide">
-                                            {product.name}
-                                        </h2>
+    return (
+        <div key={item.id} className="group flex flex-col">
+            <div className="relative overflow-hidden">
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt={product.name}
+                        className="w-full h-[350px] object-cover transition duration-300 group-hover:scale-105"
+                    />
+                ) : (
+                    <div className="w-full h-[350px] bg-gray-200 flex items-center justify-center">
+                        No Image
+                    </div>
+                )}
 
-                                        <p className="text-sm tracking-wide">
-                                            ₹{product.price}
-                                        </p>
+                <button
+                    onClick={() => removeFromWishlist(item.id)}
+                    className="absolute top-4 right-4 border px-3 py-1 text-xs uppercase bg-white hover:bg-black hover:text-white transition"
+                >
+                    Remove
+                </button>
+            </div>
 
-                                        <Link
-                                            to={`/products/${product.id}`}
-                                            className="mt-3 border px-6 py-2 text-center uppercase tracking-wide hover:bg-black hover:text-white transition"
-                                        >
-                                            View Product
-                                        </Link>
-                                    </div>
-                                </div>
-                            );
-                        })}
+            <div className="mt-6 flex flex-col gap-2">
+                <h2 className="text-lg font-semibold uppercase tracking-wide">
+                    {product.name}
+                </h2>
+
+                <p className="text-sm tracking-wide">
+                    ₹{product.price}
+                </p>
+
+                <Link
+                    to={`/products/${product.id}`}
+                    className="mt-3 border px-6 py-2 text-center uppercase tracking-wide hover:bg-black hover:text-white transition"
+                >
+                    View Product
+                </Link>
+            </div>
+        </div>
+    );
+})}
                     </div>
                 )}
             </main>

@@ -19,6 +19,7 @@ export default function Details() {
 
   const { user, loading } = useContext(AuthContext);
 
+  // ✅ Fetch product
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -35,6 +36,27 @@ export default function Details() {
     fetchProduct();
   }, [id]);
 
+  // ✅ Fetch wishlist
+  const fetchWishlist = async () => {
+    try {
+      const res = await API.get("wishlist/wishlist/");
+      setWishlist(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ✅ Fetch cart
+  const fetchCart = async () => {
+    try {
+      const res = await API.get("cart/cart/");
+      setCartItems(res.data.items || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ✅ Load wishlist + cart
   useEffect(() => {
     if (!user) {
       setWishlist([]);
@@ -42,21 +64,8 @@ export default function Details() {
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        const [wishlistRes, cartRes] = await Promise.all([
-          API.get("wishlist/wishlist/"),
-          API.get("cart/cart/"),
-        ]);
-
-        setWishlist(wishlistRes.data);
-        setCartItems(cartRes.data.items || []);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchData();
+    fetchWishlist();
+    fetchCart();
   }, [user]);
 
   const variants = product?.variants || [];
@@ -79,8 +88,9 @@ export default function Details() {
     );
   };
 
+  // ✅ Wishlist state
   const isInWishlist = wishlist.some(
-    (item) => item.product === product?.id
+    (item) => item.product?.id === product?.id
   );
 
   const toggleWishlist = async () => {
@@ -92,34 +102,33 @@ export default function Details() {
     try {
       if (isInWishlist) {
         const item = wishlist.find(
-          (w) => w.product === product.id
+          (w) => w.product?.id === product.id
         );
 
         await API.delete(`wishlist/wishlist/${item.id}/`);
-
-        setWishlist((prev) =>
-          prev.filter((w) => w.id !== item.id)
-        );
-
-        toast.info("Removed from wishlist!");
+        toast.info("Removed from wishlist");
       } else {
-        const res = await API.post("wishlist/wishlist/", {
-          product: product.id,
+        await API.post("wishlist/wishlist/", {
+          product_id: product.id,
         });
 
-        setWishlist((prev) => [...prev, res.data]);
-        toast.success("Added to wishlist!");
+        toast.success("Added to wishlist");
       }
+
+      await fetchWishlist();
     } catch (err) {
       console.error(err);
       toast.error("Wishlist action failed");
     }
   };
 
-  const isInCart = cartItems.some(
-    (item) =>
-      item.product === product?.id &&
-      item.size === selectedSize
+  // ✅ Cart states
+  const isVariantInCart = cartItems.some(
+    (item) => item?.variant?.id === selectedVariant?.id
+  );
+
+  const isProductInCart = cartItems.some(
+    (item) => item?.variant?.product === product?.id
   );
 
   const toggleCart = async () => {
@@ -139,30 +148,23 @@ export default function Details() {
     }
 
     try {
-      if (isInCart) {
+      if (isVariantInCart) {
         const item = cartItems.find(
-          (c) =>
-            c.product === product.id &&
-            c.size === selectedSize
+          (c) => c.variant.id === selectedVariant.id
         );
 
         await API.delete(`cart/cart/${item.id}/`);
-
-        setCartItems((prev) =>
-          prev.filter((c) => c.id !== item.id)
-        );
-
-        toast.info("Removed from cart!");
+        toast.info("Removed from cart");
       } else {
-        const res = await API.post("cart/cart/", {
-          product: product.id,
-          size: selectedVariant.size.value,
+        await API.post("cart/cart/", {
+          variant_id: selectedVariant.id,
           quantity: 1,
         });
 
-        setCartItems((prev) => [...prev, res.data]);
-        toast.success("Added to cart!");
+        toast.success("Added to cart");
       }
+
+      await fetchCart();
     } catch (err) {
       console.error(err);
       toast.error("Cart action failed");
@@ -178,6 +180,7 @@ export default function Details() {
       <NavBar />
 
       <main className="flex-grow max-w-7xl mx-auto px-6 pb-12 flex flex-col md:flex-row gap-6 pt-28">
+        {/* Image */}
         <div className="flex-1">
           <img
             src={product.images[0]?.url}
@@ -186,22 +189,17 @@ export default function Details() {
           />
         </div>
 
+        {/* Details */}
         <div className="flex-1 flex flex-col space-y-4">
-          <h2
-            className="text-gray-900 uppercase text-xl font-bold"
-            style={{ fontFamily: "SUSE Mono" }}
-          >
+          <h2 className="text-gray-900 uppercase text-xl font-bold">
             {product.name}
           </h2>
 
-          <p
-            className="text-gray-800 text-lg"
-            style={{ fontFamily: "SUSE Mono" }}
-          >
+          <p className="text-gray-800 text-lg">
             {product.description || "No description available."}
           </p>
 
-          {/* ✅ Dynamic Sizes */}
+          {/* Sizes */}
           <div className="flex space-x-2 mt-2">
             {variants.map((v) => {
               const isOutOfStock = v.stock === 0;
@@ -231,14 +229,12 @@ export default function Details() {
             })}
           </div>
 
-          {/* ✅ Dynamic Price */}
-          <p
-            className="text-gray-900 text-xl font-semibold mt-2"
-            style={{ fontFamily: "SUSE Mono" }}
-          >
+          {/* Price */}
+          <p className="text-gray-900 text-xl font-semibold mt-2">
             ₹ {Number(getDisplayPrice()).toFixed(2)}
           </p>
 
+          {/* Wishlist */}
           <button
             onClick={toggleWishlist}
             disabled={!user}
@@ -259,18 +255,25 @@ export default function Details() {
             )}
           </button>
 
+          {/* Cart */}
           <button
             onClick={toggleCart}
             disabled={!user}
             className={`w-48 py-2 font-semibold border-b border-gray-800 flex items-center justify-center gap-2 transition ${
-              isInCart
+              isVariantInCart
                 ? "bg-black text-white"
+                : isProductInCart
+                ? "bg-gray-800 text-white"
                 : "hover:bg-black hover:text-white"
             } ${!user && "opacity-50 cursor-not-allowed"}`}
           >
-            {isInCart ? (
+            {isVariantInCart ? (
               <>
                 <PiShoppingCartSimpleFill /> In Cart
+              </>
+            ) : isProductInCart ? (
+              <>
+                <PiShoppingCartSimpleFill /> Added (Other Size)
               </>
             ) : (
               <>

@@ -66,8 +66,9 @@ export default function Cart() {
     }
   };
 
+  // ✅ FIXED subtotal
   const subtotal = cartItems.reduce((acc, item) => {
-    const price = Number(item.product?.price) || 0;
+    const price = Number(item.variant?.final_price) || 0;
     return acc + price * item.quantity;
   }, 0);
 
@@ -89,6 +90,7 @@ export default function Cart() {
   };
 
   const handleCheckout = async () => {
+    // 1. Basic Validations
     if (cartItems.length === 0) {
       toast.error("Your cart is empty.");
       return;
@@ -100,27 +102,75 @@ export default function Cart() {
     }
 
     try {
-      await API.post("/orders/create-order/", {
+      // 2. Create the Order on your Backend
+      // This returns the razorpay_order_id and your API key
+      const res = await API.post("/orders/create-order/", {
         shipping_details: shippingDetails,
       });
 
-      toast.success("Order placed successfully!");
+      const { 
+        razorpay_order_id, 
+        razorpay_key, 
+        amount, 
+        currency 
+      } = res.data;
 
-      setCartItems([]);
-      setCheckoutOpen(false);
+      // 3. Configure Razorpay Options
+      const options = {
+        key: razorpay_key, 
+        amount: amount, 
+        currency: currency,
+        name: "Your Store Name",
+        description: "E-commerce Purchase",
+        order_id: razorpay_order_id, // The ID created by your Django view
+        handler: async function (response) {
+          // This function runs ONLY after the user pays successfully in the modal
+          try {
+            // Send the signature to your VerifyPaymentView
+            await API.post("/orders/verify-payment/", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
 
-      setShippingDetails({
-        name: "",
-        address: "",
-        city: "",
-        postalCode: "",
-        phone: "",
+            toast.success("Payment successful! Order placed.");
+            
+            // Cleanup
+            setCartItems([]);
+            setCheckoutOpen(false);
+            setShippingDetails({
+              name: "", address: "", city: "", postalCode: "", phone: "",
+            });
+
+            navigate("/profile");
+          } catch (err) {
+            console.error("Verification error:", err);
+            toast.error("Payment verification failed. Please contact support.");
+          }
+        },
+        prefill: {
+          name: shippingDetails.name,
+          contact: shippingDetails.phone,
+        },
+        theme: {
+          color: "#000000", // Matches your minimalist black/white UI
+        },
+      };
+
+      // 4. Open the Razorpay Modal
+      const rzp = new window.Razorpay(options);
+      
+      // Optional: Handle payment failure (modal closed or card declined)
+      rzp.on('payment.failed', function (response){
+          toast.error("Payment failed: " + response.error.description);
       });
 
-      navigate("/profile");
+      rzp.open();
+
     } catch (error) {
       console.error("Checkout error:", error.response || error);
-      toast.error("Checkout failed!");
+      const errorMsg = error.response?.data?.detail || "Checkout failed!";
+      toast.error(errorMsg);
     }
   };
 
@@ -135,11 +185,10 @@ export default function Cart() {
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-1 space-y-6 pr-6 border-r border-gray-300">
               {cartItems.map((item) => {
-                const product = item.product;
-                const imageUrl =
-                  product?.images && product.images.length > 0
-                    ? product.images[0].url
-                    : null;
+                const variant = item.variant;
+                const product = variant?.product;
+
+                const imageUrl = product?.main_image;
 
                 return (
                   <div
@@ -170,11 +219,13 @@ export default function Cart() {
                         <h2 className="font-semibold uppercase">
                           {product?.name}
                         </h2>
+
                         <p className="text-sm uppercase">
-                          Size: {item.size}
+                          Size: {variant?.size?.value}
                         </p>
+
                         <p className="font-semibold">
-                          ₹{product?.price}
+                          ₹{variant?.final_price}
                         </p>
                       </div>
                     </div>
@@ -200,104 +251,109 @@ export default function Cart() {
             </div>
 
             <div className="w-full md:w-1/3 pl-8 pr-5 py-5">
-              <h2 className="text-xl font-semibold mb-4">
-                Order Summary
-              </h2>
+  <h2 className="text-xl font-semibold mb-4">
+    Order Summary
+  </h2>
 
-              <div className="flex justify-between mb-2">
-                <span>Subtotal</span>
-                <span>₹{subtotal}</span>
-              </div>
+  <div className="flex justify-between mb-2">
+    <span>Subtotal</span>
+    <span>₹{subtotal}</span>
+  </div>
 
-              <div className="flex justify-between mb-2">
-                <span>Shipping</span>
-                <span>₹{shipping}</span>
-              </div>
+  <div className="flex justify-between mb-2">
+    <span>Shipping</span>
+    <span>₹{shipping}</span>
+  </div>
 
-              <div className="flex justify-between font-semibold border-t pt-3 mt-3">
-                <span>Total</span>
-                <span>₹{total}</span>
-              </div>
+  <div className="flex justify-between font-semibold border-t pt-3 mt-3">
+    <span>Total</span>
+    <span>₹{total}</span>
+  </div>
 
-              <button
-                className="w-full mt-6 border py-2"
-                onClick={() => setCheckoutOpen(true)}
-              >
-                Proceed to Checkout
-              </button>
+  <button
+    className="w-full mt-6 border py-2"
+    onClick={() => setCheckoutOpen(true)}
+  >
+    Proceed to Checkout
+  </button>
 
-              {checkoutOpen && (
-                <div className="mt-6 space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={shippingDetails.name}
-                    onChange={(e) =>
-                      setShippingDetails({
-                        ...shippingDetails,
-                        name: e.target.value,
-                      })
-                    }
-                    className="w-full border p-2"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Address"
-                    value={shippingDetails.address}
-                    onChange={(e) =>
-                      setShippingDetails({
-                        ...shippingDetails,
-                        address: e.target.value,
-                      })
-                    }
-                    className="w-full border p-2"
-                  />
-                  <input
-                    type="text"
-                    placeholder="City"
-                    value={shippingDetails.city}
-                    onChange={(e) =>
-                      setShippingDetails({
-                        ...shippingDetails,
-                        city: e.target.value,
-                      })
-                    }
-                    className="w-full border p-2"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Postal Code"
-                    value={shippingDetails.postalCode}
-                    onChange={(e) =>
-                      setShippingDetails({
-                        ...shippingDetails,
-                        postalCode: e.target.value,
-                      })
-                    }
-                    className="w-full border p-2"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Phone"
-                    value={shippingDetails.phone}
-                    onChange={(e) =>
-                      setShippingDetails({
-                        ...shippingDetails,
-                        phone: e.target.value,
-                      })
-                    }
-                    className="w-full border p-2"
-                  />
+  {/* ✅ ADDED — checkout form */}
+  {checkoutOpen && (
+    <div className="mt-6 space-y-4">
+      <input
+        type="text"
+        placeholder="Full Name"
+        value={shippingDetails.name}
+        onChange={(e) =>
+          setShippingDetails({
+            ...shippingDetails,
+            name: e.target.value,
+          })
+        }
+        className="w-full border p-2"
+      />
 
-                  <button
-                    onClick={handleCheckout}
-                    className="w-full bg-black text-white py-2"
-                  >
-                    Place Order
-                  </button>
-                </div>
-              )}
-            </div>
+      <input
+        type="text"
+        placeholder="Address"
+        value={shippingDetails.address}
+        onChange={(e) =>
+          setShippingDetails({
+            ...shippingDetails,
+            address: e.target.value,
+          })
+        }
+        className="w-full border p-2"
+      />
+
+      <input
+        type="text"
+        placeholder="City"
+        value={shippingDetails.city}
+        onChange={(e) =>
+          setShippingDetails({
+            ...shippingDetails,
+            city: e.target.value,
+          })
+        }
+        className="w-full border p-2"
+      />
+
+      <input
+        type="text"
+        placeholder="Postal Code"
+        value={shippingDetails.postalCode}
+        onChange={(e) =>
+          setShippingDetails({
+            ...shippingDetails,
+            postalCode: e.target.value,
+          })
+        }
+        className="w-full border p-2"
+      />
+
+      <input
+        type="text"
+        placeholder="Phone"
+        value={shippingDetails.phone}
+        onChange={(e) =>
+          setShippingDetails({
+            ...shippingDetails,
+            phone: e.target.value,
+          })
+        }
+        className="w-full border p-2"
+      />
+
+      <button
+        onClick={handleCheckout}
+        className="w-full bg-black text-white py-2 uppercase tracking-widest"
+      >
+        Pay ₹{total} Now
+      </button>
+    </div>
+  )}
+</div>
           </div>
         ) : (
           <div className="flex flex-col items-center py-24">

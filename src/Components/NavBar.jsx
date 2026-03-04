@@ -50,7 +50,7 @@ export default function NavBar({ toggle, menuOpen }) {
                     style={{ fontFamily: "'Bodoni Moda', serif" }}
                     className="text-sm tracking-wide"
                 >
-                    Heart, Gold
+                    R
                 </Link>
 
             </div>

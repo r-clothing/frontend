@@ -96,7 +96,7 @@ export default function Women() {
         toast.success('Removed from wishlist', { autoClose: 2000 });
       } else {
         const res = await API.post('/wishlist/wishlist/', {
-          product: product.id,
+          product_id: product.id,
         });
         setWishlist((prev) => [...prev, res.data]);
         toast.success('Added to wishlist', { autoClose: 2000 });
