@@ -29,8 +29,8 @@ export default function Cart() {
       const data = Array.isArray(res.data)
         ? res.data
         : Array.isArray(res.data?.items)
-        ? res.data.items
-        : [];
+          ? res.data.items
+          : [];
 
       setCartItems(data);
     } catch (err) {
@@ -66,7 +66,7 @@ export default function Cart() {
     }
   };
 
-  // ✅ FIXED subtotal
+  // Fixed subtotal
   const subtotal = cartItems.reduce((acc, item) => {
     const price = Number(item.variant?.final_price) || 0;
     return acc + price * item.quantity;
@@ -108,17 +108,17 @@ export default function Cart() {
         shipping_details: shippingDetails,
       });
 
-      const { 
-        razorpay_order_id, 
-        razorpay_key, 
-        amount, 
-        currency 
+      const {
+        razorpay_order_id,
+        razorpay_key,
+        amount,
+        currency
       } = res.data;
 
       // 3. Configure Razorpay Options
       const options = {
-        key: razorpay_key, 
-        amount: amount, 
+        key: razorpay_key,
+        amount: amount,
         currency: currency,
         name: "Your Store Name",
         description: "E-commerce Purchase",
@@ -134,7 +134,7 @@ export default function Cart() {
             });
 
             toast.success("Payment successful! Order placed.");
-            
+
             // Cleanup
             setCartItems([]);
             setCheckoutOpen(false);
@@ -159,10 +159,10 @@ export default function Cart() {
 
       // 4. Open the Razorpay Modal
       const rzp = new window.Razorpay(options);
-      
+
       // Optional: Handle payment failure (modal closed or card declined)
-      rzp.on('payment.failed', function (response){
-          toast.error("Payment failed: " + response.error.description);
+      rzp.on('payment.failed', function (response) {
+        toast.error("Payment failed: " + response.error.description);
       });
 
       rzp.open();
@@ -251,109 +251,124 @@ export default function Cart() {
             </div>
 
             <div className="w-full md:w-1/3 pl-8 pr-5 py-5">
-  <h2 className="text-xl font-semibold mb-4">
-    Order Summary
-  </h2>
+              <h2 className="text-xl font-semibold mb-4">
+                Order Summary
+              </h2>
 
-  <div className="flex justify-between mb-2">
-    <span>Subtotal</span>
-    <span>₹{subtotal}</span>
-  </div>
+              <div className="flex justify-between mb-2">
+                <span>Subtotal</span>
+                <span>₹{subtotal}</span>
+              </div>
 
-  <div className="flex justify-between mb-2">
-    <span>Shipping</span>
-    <span>₹{shipping}</span>
-  </div>
+              <div className="flex justify-between mb-2">
+                <span>Shipping</span>
+                <span>₹{shipping}</span>
+              </div>
 
-  <div className="flex justify-between font-semibold border-t pt-3 mt-3">
-    <span>Total</span>
-    <span>₹{total}</span>
-  </div>
+              <div className="flex justify-between font-semibold border-t pt-3 mt-3">
+                <span>Total</span>
+                <span>₹{total}</span>
+              </div>
 
-  <button
-    className="w-full mt-6 border py-2"
-    onClick={() => setCheckoutOpen(true)}
-  >
-    Proceed to Checkout
-  </button>
+              <button
+                className="w-full mt-6 border py-2"
+                onClick={() => setCheckoutOpen(true)}
+              >
+                Proceed to Checkout
+              </button>
 
-  {/* ✅ ADDED — checkout form */}
-  {checkoutOpen && (
-    <div className="mt-6 space-y-4">
-      <input
-        type="text"
-        placeholder="Full Name"
-        value={shippingDetails.name}
-        onChange={(e) =>
-          setShippingDetails({
-            ...shippingDetails,
-            name: e.target.value,
-          })
-        }
-        className="w-full border p-2"
-      />
+              {/* Checkout Form */}
+              {checkoutOpen && (
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Full Name"
+                      value={shippingDetails.name}
+                      onChange={(e) =>
+                        setShippingDetails({
+                          ...shippingDetails,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full border p-2"
+                    />
+                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  </div>
 
-      <input
-        type="text"
-        placeholder="Address"
-        value={shippingDetails.address}
-        onChange={(e) =>
-          setShippingDetails({
-            ...shippingDetails,
-            address: e.target.value,
-          })
-        }
-        className="w-full border p-2"
-      />
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Address"
+                      value={shippingDetails.address}
+                      onChange={(e) =>
+                        setShippingDetails({
+                          ...shippingDetails,
+                          address: e.target.value,
+                        })
+                      }
+                      className="w-full border p-2"
+                    />
+                    {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+                  </div>
 
-      <input
-        type="text"
-        placeholder="City"
-        value={shippingDetails.city}
-        onChange={(e) =>
-          setShippingDetails({
-            ...shippingDetails,
-            city: e.target.value,
-          })
-        }
-        className="w-full border p-2"
-      />
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={shippingDetails.city}
+                      onChange={(e) =>
+                        setShippingDetails({
+                          ...shippingDetails,
+                          city: e.target.value,
+                        })
+                      }
+                      className="w-full border p-2"
+                    />
+                    {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+                  </div>
 
-      <input
-        type="text"
-        placeholder="Postal Code"
-        value={shippingDetails.postalCode}
-        onChange={(e) =>
-          setShippingDetails({
-            ...shippingDetails,
-            postalCode: e.target.value,
-          })
-        }
-        className="w-full border p-2"
-      />
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Postal Code"
+                      value={shippingDetails.postalCode}
+                      onChange={(e) =>
+                        setShippingDetails({
+                          ...shippingDetails,
+                          postalCode: e.target.value,
+                        })
+                      }
+                      className="w-full border p-2"
+                    />
+                    {errors.postalCode && <p className="text-red-500 text-xs mt-1">{errors.postalCode}</p>}
+                  </div>
 
-      <input
-        type="text"
-        placeholder="Phone"
-        value={shippingDetails.phone}
-        onChange={(e) =>
-          setShippingDetails({
-            ...shippingDetails,
-            phone: e.target.value,
-          })
-        }
-        className="w-full border p-2"
-      />
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Phone"
+                      value={shippingDetails.phone}
+                      onChange={(e) =>
+                        setShippingDetails({
+                          ...shippingDetails,
+                          phone: e.target.value,
+                        })
+                      }
+                      className="w-full border p-2"
+                    />
+                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+                  </div>
 
-      <button
-        onClick={handleCheckout}
-        className="w-full bg-black text-white py-2 uppercase tracking-widest"
-      >
-        Pay ₹{total} Now
-      </button>
-    </div>
-  )}
-</div>
+                  <button
+                    onClick={handleCheckout}
+                    className="w-full bg-black text-white py-2 uppercase tracking-widest cursor-pointer hover:bg-gray-800 transition"
+                  >
+                    Pay ₹{total} Now
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center py-24">

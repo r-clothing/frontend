@@ -1,12 +1,15 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
-import NavBar from "../Components/NavBar.jsx";
-import Footer from "../Components/Footer.jsx";
-import { toast } from "react-toastify";
+
 import { PiShoppingCartSimpleFill, PiShoppingCartSimple } from "react-icons/pi";
 import { MdFavorite, MdFavoriteBorder } from "react-icons/md";
+
+import { toast } from "react-toastify";
+
 import API from "../api.jsx";
 import { AuthContext } from "../Components/AuthContext.jsx";
+import NavBar from "../Components/NavBar.jsx";
+import Footer from "../Components/Footer.jsx";
 
 export default function Details() {
   const { id } = useParams();
@@ -19,16 +22,22 @@ export default function Details() {
 
   const { user, loading } = useContext(AuthContext);
 
-  // ✅ Fetch product
+  // Fetch product
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const res = await API.get(`products/products/${id}/`);
+
         setProduct(res.data);
-      } catch (err) {
+      }
+
+      catch (err) {
         console.error(err);
+
         toast.error("Failed to load product");
-      } finally {
+      }
+
+      finally {
         setPageLoading(false);
       }
     };
@@ -36,31 +45,41 @@ export default function Details() {
     fetchProduct();
   }, [id]);
 
-  // ✅ Fetch wishlist
+  // Fetch wishlist
   const fetchWishlist = async () => {
     try {
       const res = await API.get("wishlist/wishlist/");
+
       setWishlist(res.data);
-    } catch (err) {
+    }
+
+    catch (err) {
       console.error(err);
     }
   };
 
-  // ✅ Fetch cart
+  // Fetch cart
   const fetchCart = async () => {
     try {
       const res = await API.get("cart/cart/");
-      setCartItems(res.data.items || []);
-    } catch (err) {
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.items || [];
+
+        setCartItems(data);
+    }
+
+    catch (err) {
       console.error(err);
     }
   };
 
-  // ✅ Load wishlist + cart
+  // Load wishlist + cart
   useEffect(() => {
     if (!user) {
       setWishlist([]);
       setCartItems([]);
+
       return;
     }
 
@@ -88,7 +107,7 @@ export default function Details() {
     );
   };
 
-  // ✅ Wishlist state
+  // Wishlist state
   const isInWishlist = wishlist.some(
     (item) => item.product?.id === product?.id
   );
@@ -96,6 +115,7 @@ export default function Details() {
   const toggleWishlist = async () => {
     if (!user) {
       toast.warning("Please log in first!");
+
       return;
     }
 
@@ -106,8 +126,11 @@ export default function Details() {
         );
 
         await API.delete(`wishlist/wishlist/${item.id}/`);
+
         toast.info("Removed from wishlist");
-      } else {
+      }
+
+      else {
         await API.post("wishlist/wishlist/", {
           product_id: product.id,
         });
@@ -116,34 +139,40 @@ export default function Details() {
       }
 
       await fetchWishlist();
-    } catch (err) {
+    }
+
+    catch (err) {
       console.error(err);
+
       toast.error("Wishlist action failed");
     }
   };
 
-  // ✅ Cart states
+  // Cart states
   const isVariantInCart = cartItems.some(
     (item) => item?.variant?.id === selectedVariant?.id
   );
 
   const isProductInCart = cartItems.some(
-    (item) => item?.variant?.product === product?.id
+    (item) => item?.variant?.product?.id === product?.id
   );
 
   const toggleCart = async () => {
     if (!user) {
       toast.warning("Please log in first!");
+
       return;
     }
 
     if (!selectedSize) {
       toast.error("Please select a size first!");
+
       return;
     }
 
     if (!selectedVariant || selectedVariant.stock === 0) {
       toast.error("Selected size is out of stock");
+
       return;
     }
 
@@ -154,8 +183,11 @@ export default function Details() {
         );
 
         await API.delete(`cart/cart/${item.id}/`);
+
         toast.info("Removed from cart");
-      } else {
+      }
+
+      else {
         await API.post("cart/cart/", {
           variant_id: selectedVariant.id,
           quantity: 1,
@@ -165,8 +197,11 @@ export default function Details() {
       }
 
       await fetchCart();
-    } catch (err) {
+    }
+
+    catch (err) {
       console.error(err);
+
       toast.error("Cart action failed");
     }
   };

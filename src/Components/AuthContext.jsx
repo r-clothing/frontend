@@ -1,4 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect } from 'react';
+
 import API from '../api.jsx'
 
 export const AuthContext = createContext();
@@ -25,7 +27,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(res.data);
             }
     
-            catch (err) {
+            catch {
                 localStorage.removeItem('access');
                 localStorage.removeItem('refresh');
             }
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
+
         setUser(null);
     };
 

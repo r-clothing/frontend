@@ -1,10 +1,13 @@
 import { useEffect, useState, useContext } from "react";
+
 import { useNavigate } from "react-router-dom";
-import NavBar from "../Components/NavBar.jsx";
-import Footer from "../Components/Footer.jsx";
+
 import { MdFavorite, MdFavoriteBorder } from "react-icons/md";
+
 import API from "../api.jsx";
 import { AuthContext } from "../Components/AuthContext.jsx";
+import NavBar from "../Components/NavBar.jsx";
+import Footer from "../Components/Footer.jsx";
 
 export default function Kids() {
   const [products, setProducts] = useState([]);
@@ -12,31 +15,40 @@ export default function Kids() {
   const [pageLoading, setPageLoading] = useState(true);
 
   const { user, loading } = useContext(AuthContext);
+
   const navigate = useNavigate();
 
   const getProductDisplayImage = (product) => {
     if (!product.images || product.images.length === 0) return '';
     const mainImage = product.images.find((img) => img.main === true);
+
     return mainImage ? mainImage.url : product.images[0]?.url;
   };
 
   const getProductId = (item) => {
     if (typeof item.product === "object") return item.product.id;
+
     return item.product;
   };
 
   useEffect(() => {
     const fetchProducts = async () => {
+
       try {
         const response = await API.get("/products/products/", {
           params: { category: "KIDS" },
         });
 
         const activeProducts = response.data.filter((p) => p.is_active);
+
         setProducts(activeProducts);
-      } catch (err) {
+      }
+
+      catch (err) {
         console.error(err);
-      } finally {
+      }
+
+      finally {
         setPageLoading(false);
       }
     };
@@ -47,14 +59,18 @@ export default function Kids() {
   useEffect(() => {
     if (!user) {
       setWishlist([]);
+
       return;
     }
 
     const fetchWishlist = async () => {
       try {
         const res = await API.get("/wishlist/wishlist/");
+
         setWishlist(res.data);
-      } catch (err) {
+      }
+
+      catch (err) {
         console.error(err);
       }
     };
@@ -72,16 +88,22 @@ export default function Kids() {
     try {
       if (existingItem) {
         await API.delete(`/wishlist/wishlist/${existingItem.id}/`);
+
         setWishlist((prev) =>
           prev.filter((item) => item.id !== existingItem.id)
         );
-      } else {
+      }
+
+      else {
         const res = await API.post("/wishlist/wishlist/", {
-          product: product.id,
+          product_id: product.id,
         });
+
         setWishlist((prev) => [...prev, res.data]);
       }
-    } catch (err) {
+    }
+
+    catch (err) {
       console.error(err);
     }
   };
